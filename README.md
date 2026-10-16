@@ -6,6 +6,8 @@ Production-quality starter for a secure serverless auth platform: **S3 + CloudFr
 
 ## Architecture
 
+![Architecture](docs/architecture.png)
+
 ```text
                     ┌────────────────────┐
                     │  Route53 (optional) │
