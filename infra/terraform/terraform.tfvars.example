@@ -1,0 +1,12 @@
+project_name          = "secure-auth"
+environment           = "dev"
+aws_region            = "ap-south-1"
+cognito_domain_prefix = "CHANGE-ME-globally-unique"
+callback_urls         = ["http://localhost:8000/"]
+logout_urls           = ["http://localhost:8000/"]
+
+# google_client_id     = ""
+# google_client_secret = ""
+# enable_waf    = true
+# domain_name   = "app.example.com"
+# hosted_zone_id = "Z0123456789ABCDEF"

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Auth Platform</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Secure Auth Platform</h1>
+    <p class="muted">Cognito Hosted UI (PKCE) + API Gateway JWT + Lambda RBAC demo.</p>
+
+    <section id="auth-section">
+      <div class="row">
+        <button id="btn-login">Sign in / Sign up</button>
+        <button id="btn-logout" disabled>Sign out</button>
+      </div>
+      <p class="muted small">
+        Sign-up verifies email via code. Password reset via the
+        <a id="link-reset" href="#">Hosted UI reset flow</a>.
+      </p>
+      <p id="status" class="status">Not signed in.</p>
+    </section>
+
+    <section>
+      <h2>Call protected API</h2>
+      <div class="row">
+        <button id="btn-me" disabled>GET /me</button>
+        <button id="btn-admin" disabled>GET /admin</button>
+        <button id="btn-health">GET /health</button>
+      </div>
+      <pre id="output">Results appear here.</pre>
+    </section>
+
+    <section>
+      <h2>ID token</h2>
+      <pre id="token">(none)</pre>
+    </section>
+  </main>
+  <script src="config.example.js"></script>
+  <script src="config.js" onerror="void 0"></script>
+  <script src="app.js"></script>
+</body>
+</html>

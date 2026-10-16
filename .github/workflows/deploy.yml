@@ -1,0 +1,65 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # OIDC to AWS — no long-lived secrets
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r backend/lambda/requirements.txt -r tests/requirements.txt
+      - run: python -m pytest tests/ -v
+
+  plan:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: opentofu/setup-opentofu@v1
+        with: { tofu_version: v1.8.0 }
+      - working-directory: infra/terraform
+        run: |
+          tofu init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=secure-auth/terraform.tfstate" -backend-config="region=$AWS_REGION"
+          tofu validate
+          tofu plan -out=tfplan
+
+  apply-deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: opentofu/setup-opentofu@v1
+        with: { tofu_version: v1.8.0 }
+      - working-directory: infra/terraform
+        run: |
+          tofu init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=secure-auth/terraform.tfstate" -backend-config="region=$AWS_REGION"
+          tofu apply -auto-approve tfplan || tofu apply -auto-approve
+          echo "API=$(tofu output -raw api_endpoint)" >> "$GITHUB_ENV"
+          echo "BUCKET=$(tofu output -raw web_bucket)" >> "$GITHUB_ENV"
+          echo "DIST_ID=$(tofu output -raw cloudfront_distribution_id)" >> "$GITHUB_ENV"
+      - run: |
+          aws s3 sync web "s3://$BUCKET" --delete --exclude "config.js" --exclude "config.example.js"
+          aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
